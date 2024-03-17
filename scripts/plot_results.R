@@ -1,6 +1,11 @@
 theme_set(theme_gray())
 library(scales)
 library(plyr)
+library(tidyverse)
+library(patchwork)
+library(ggbreak)
+library(ggfortify)
+library(ggrepel)
 roundUp <- function(x) 10^ceiling(log10(x))
 
 
