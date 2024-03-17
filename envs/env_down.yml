@@ -1,0 +1,16 @@
+name: snake
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - conda-forge::hdf5=1.12.1
+  - bioconda::bustools
+  - bioconda::kallisto
+  - python=3.8.6
+  - conda-forge::matplotlib-base=3.6.0
+  - conda-forge::pandas=1.4.3
+  - conda-forge::scanpy=1.8.2
+  - conda-forge::python-igraph=0.9.9
+  - conda-forge::leidenalg=0.8.9
+  - conda-forge::scikit-misc=0.1.4

@@ -1,0 +1,18 @@
+name: env_bbknn
+channels:
+  - conda-forge
+  - bioconda
+
+  - defaults
+dependencies:
+  - python=3.8.6
+  - numpy= 1.20.1
+  - conda-forge::scanpy=1.8.2
+  #- bioconda::bbknn=1.4.1
+  #- bioconda::mnnpy=0.1.9.5
+  - conda-forge::python-igraph=0.9.9
+  - conda-forge::leidenalg=0.8.9
+  - bioconda::bbknn=1.4.1
+  - conda-forge::scikit-misc=0.1.4
+
+

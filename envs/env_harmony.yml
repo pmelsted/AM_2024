@@ -1,0 +1,13 @@
+name: r_harmony
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  #- conda-forge/linux-64::r-base=4.1.3
+
+  - conda-forge/linux-64::r-seurat=4.1.0
+
+  - bioconda/linux-64::r-harmony=0.1
+
+

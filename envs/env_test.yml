@@ -1,0 +1,10 @@
+name: snake
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - conda-forge::hdf5=1.12.1
+  - bioconda::bustools
+  - bioconda::kallisto
+

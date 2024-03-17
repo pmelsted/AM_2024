@@ -1,0 +1,12 @@
+name: r_seurat
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+
+
+  - conda-forge/linux-64::r-seurat=4.1.0
+
+
+  

@@ -1,0 +1,12 @@
+name: snake
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8.6
+  - numpy= 1.20.1
+  - conda-forge::scvi-tools=0.15.0
+  - conda-forge::scanpy=1.8.2
+  - conda-forge::python-igraph=0.9.9
+  - conda-forge::leidenalg=0.8.8

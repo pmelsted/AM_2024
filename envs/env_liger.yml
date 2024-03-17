@@ -1,0 +1,19 @@
+name: env_liger
+channels:
+  - conda-forge
+  - bioconda
+
+  - defaults
+dependencies:
+
+  - python=3.8.6
+  - conda-forge::matplotlib-base=3.6.0
+
+  - conda-forge::scanpy=1.8.2
+
+
+  - pip:
+    - pyliger==0.2.0
+    - pandas==1.4.3 
+  #- conda-forge::pandas=1.4.3
+  #- conda-forge::scanpy=1.8.2
