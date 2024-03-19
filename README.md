@@ -1,7 +1,7 @@
 # AM_2024
 Analaysis for the batch correction paper
 
-### Basic workflow
+## Basic workflow
 
 Using snakemake to create data-all.txt one can create all the data required for the analysis in the paper.
 
@@ -22,4 +22,22 @@ The following software/packages was used in the workflow. All packages from cond
 * pyliger 0.2.0
 * bustools 0.43.0
 * kallisto 0.50.0
+
+## Data
+
+#### PBMC3K
+
+3k PBMCs from a Healthy Donor - https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.1.0/pbmc3k
+
+#### Mouse brain
+
+1.3 Million Brain Cells from E18 Mice - https://www.10xgenomics.com/datasets/1-3-million-brain-cells-from-e-18-mice-2-standard-1-3-0
+
+#### Mouse heart
+
+1k Heart Cells from an E18 mouse (v3 chemistry) - https://www.10xgenomics.com/datasets/1-k-heart-cells-from-an-e-18-mouse-v-3-chemistry-3-standard-3-0-0
+
+#### PBMC4K
+
+ 4k PBMCs from a Healthy Donor - https://www.10xgenomics.com/datasets/4-k-pbm-cs-from-a-healthy-donor-2-standard-2-1-0
 
