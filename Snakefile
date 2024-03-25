@@ -37,7 +37,7 @@ def make_output_names(prefix,simul=False,simul_string=None,prepend_letters=False
             rf"data/{{adata, {prefix}(?![\w\d_-])|{prefix}-\d+}}{pf}"
             for pf in postfixes
         ]
-        ls[-1] = ls[-1][:-1]
+        #ls[-1] = ls[-1][:-1]
     if prepend_letters:
         letters = ["a","b","c","d","e","f","g","h"]
         for i in range(len(ls)):
@@ -485,7 +485,7 @@ rule run_pbmc_orig:
         "data/{adata}_seurat.h5ad",
         "data/{adata}_seurat_v2.h5ad"
     output:
-        "data/{adata,adata(?![\w\d_-])|adata-\d+}.txt"
+        "data/{adata,pbmc3k(?![\w\d_-])|pbmc3k-\d+}.txt"
 
     conda:
         "envs/env.yml"

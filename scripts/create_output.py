@@ -468,18 +468,18 @@ def main(inputs, wildcards, outputs):
     """
     neuro = False
     # resamp = False
-    if "neuro" in wildcards[0]:
+    if "simul-neuro" in wildcards[0]:
+        cc_file_string = "data/cc_file_simul_neuro.pickle"
+        nn_rank_file_string = "data/nn_rank_file_simul_neuro.pickle"
+        nn_rank_emb_file_string = "data/nn_rank_emb_file_simul_neuro.pickle"
+        orig_leiden_clust_string = "data/leiden_simul_neuro.csv"
+    elif "neuro" in wildcards[0]:
         cc_file_string = "data/cc_file_neuro.pickle"
         nn_rank_file_string = "data/nn_rank_file_neuro.pickle"
         nn_rank_emb_file_string = "data/nn_rank_emb_file_neuro.pickle"
         orig_leiden_clust_string = "data/leiden_neuro.csv"
         neuro = True
         # resamp = True
-    elif "simul-neuro" in wildcards[0]:
-        cc_file_string = "data/cc_file_simul_neuro.pickle"
-        nn_rank_file_string = "data/nn_rank_file_simul_neuro.pickle"
-        nn_rank_emb_file_string = "data/nn_rank_emb_file_simul_neuro.pickle"
-        orig_leiden_clust_string = "data/leiden_simul_neuro.csv"
         # neuro_resamp = True
     elif "simul-pbmc" in wildcards[0]:
         cc_file_string = "data/cc_file_simul_pbmc.pickle"

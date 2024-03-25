@@ -5,7 +5,7 @@ import methods
 
 def main():
     adata = anndata.read_h5ad(snakemake.input[0])
-    adata_seurat = methods.apply_method("seuratv3", adata, inputs=snakemake.input)
+    adata_seurat = methods.apply_method("seuratv4", adata, inputs=snakemake.input)
 
     if "diffexp" in snakemake.wildcards[0]:
         import pandas as pd

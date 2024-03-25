@@ -645,6 +645,7 @@ def apply_method(meth, adata, inputs=None, outputs=None):
     if meth == "scvi":
         import scvi
 
+        scvi.settings.seed = 42
         scvi.model.SCVI.setup_anndata(adata_comb, layer="counts", batch_key="batch")
         model = scvi.model.SCVI(adata_comb)
 
@@ -665,7 +666,7 @@ def apply_method(meth, adata, inputs=None, outputs=None):
         sc.pp.neighbors(adata_comb, use_rep="X_harmony", random_state=42)
         sc.tl.leiden(adata_comb, random_state=42)
         return adata_comb
-    if meth == "seuratv3":
+    if meth == "seuratv4":
         x_seurat = pd.read_csv(inputs[1], sep=" ", header=0)
         genes_out_of_order = np.array(x_seurat.columns.values)
 
@@ -707,7 +708,7 @@ def apply_method(meth, adata, inputs=None, outputs=None):
         sc.tl.leiden(adata_temp, random_state=42)
         return adata_temp
 
-    if meth == "seuratv3_v2":
+    if meth == "seuratv4_v2":
         x_seurat = pd.read_csv(inputs[1], sep=" ", header=0)
         genes_out_of_order = np.array(x_seurat.columns.values)
 
@@ -847,31 +848,31 @@ def get_mw(norms, adata_comb):
     return mannwhitneyu(top_nn_norms[2, :], top_nn_norms_comb[2, :])
 
 
-def get_all_neighs_from_norm(norm):
-    mat = []
-    for i in range(norm.shape[0]):
-        mat.append(get_neighs_from_norm(norm, i, norm.shape[0]))
-    return np.array(mat)
+# def get_all_neighs_from_norm(norm):
+#     mat = []
+#     for i in range(norm.shape[0]):
+#         mat.append(get_neighs_from_norm(norm, i, norm.shape[0]))
+#     return np.array(mat)
 
 
-def get_mean_object(mat):
-    arr = []
-    for i in mat:
-        arr.append(np.mean(i))
-    return np.array(arr)
+# def get_mean_object(mat):
+#     arr = []
+#     for i in mat:
+#         arr.append(np.mean(i))
+#     return np.array(arr)
 
 
-def return_ind(adata):
-    np.random.seed(42)
-    indices = np.random.permutation(adata.X.shape[0])
+# def return_ind(adata):
+#     np.random.seed(42)
+#     indices = np.random.permutation(adata.X.shape[0])
 
-    ind = np.vstack((np.arange((adata.X.shape[0])), np.zeros(adata.X.shape[0]))).T
-    split_1, split_2 = indices[: int(adata.X.shape[0] / 2)], indices[int(adata.X.shape[0] / 2) :]
+#     ind = np.vstack((np.arange((adata.X.shape[0])), np.zeros(adata.X.shape[0]))).T
+#     split_1, split_2 = indices[: int(adata.X.shape[0] / 2)], indices[int(adata.X.shape[0] / 2) :]
 
-    ind[split_1, 1] = 0
-    ind[split_2, 1] = 1
-    # ind = ind[:,1]
-    return ind
+#     ind[split_1, 1] = 0
+#     ind[split_2, 1] = 1
+#     # ind = ind[:,1]
+#     return ind
 
 
 def diff_clust(clust, clust_comb, adata):
