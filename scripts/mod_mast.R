@@ -81,8 +81,9 @@ create_data <- function(name=""){
   cl = read.csv(leiden_clusters_str,header=FALSE)$V1
   colData(data.sce)$ident <- as.factor(cl)
 
-
-
+  if(name == "scvi"){
+    logcounts(data.sce) <- log2(counts(data.sce) + 1)
+  }
 
   # genes <- apply(X=genes,MARGIN=c(1,2),FUN=tolower)
   # clust_b <- which(genes == "ms4a1",arr.ind=T)[2]

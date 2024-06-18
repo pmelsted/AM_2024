@@ -283,30 +283,42 @@ def nn_rank_change(adata, adata_list, neuro=False):
 
     top_nn = get_top_nn(adata_norms, 30)
     temp_adata_list = adata_list.copy()
+    ####
+    # if multiprocessing.cpu_count() >= 5:
+    #     p = multiprocessing.Pool(5)
+    # else:
+    #     p = multiprocessing.Pool(1)
+    # # k = []
+    # ind = 0
+    # print("starting pool loop")
+    # # remove harmony, liger and ligerv2
+    # if len(adata_list) != 1:
+    #     del temp_adata_list[1]
+    #     del temp_adata_list[2]
+    # for result in p.starmap(
+    #     nn_rank_parall_exec,
+    #     zip(temp_adata_list, [adata_norms] * len(temp_adata_list), [adata] * len(temp_adata_list), [top_nn] * len(temp_adata_list)),
+    # ):
+    #     print(ind)
+    #     mean_rank_change.append(result)
+    #     ind = ind + 1
 
-    if multiprocessing.cpu_count() >= 5:
-        p = multiprocessing.Pool(5)
-    else:
-        p = multiprocessing.Pool(1)
-    # k = []
-    ind = 0
-    print("starting pool loop")
+    ####
+    ######
     # remove harmony, liger and ligerv2
     if len(adata_list) != 1:
         del temp_adata_list[1]
-        del temp_adata_list[2]
-        del temp_adata_list[3]
-    for result in p.starmap(
-        nn_rank_parall_exec,
-        zip(temp_adata_list, [adata_norms] * len(temp_adata_list), [adata] * len(temp_adata_list), [top_nn] * len(temp_adata_list)),
-    ):
-        print(ind)
-        mean_rank_change.append(result)
-        ind = ind + 1
+        del temp_adata_list[1]
+    mean_rank_change = []
 
+    for adata2 in temp_adata_list:
+        result = nn_rank_parall_exec(adata2, adata_norms, adata, top_nn)
+        mean_rank_change.append(result)
+    ##########
     # get nn order for bbknn
     # add it first in list
-    return np.array(mean_rank_change)
+    # return np.array(mean_rank_change)
+    return mean_rank_change
 
 
 def nn_rank_change_embedding(adata, adata_list):
@@ -371,7 +383,8 @@ def nn_rank_change_embedding(adata, adata_list):
         for i in nn_rank_change:
             arr.append(np.median(i))
         mean_rank_change.append(arr)
-    return np.array(mean_rank_change)
+    # return np.array(mean_rank_change)
+    return mean_rank_change
 
 
 def nn_rank_parall_exec(k, adata_norms, adata, top_nn):
@@ -382,11 +395,11 @@ def nn_rank_parall_exec(k, adata_norms, adata, top_nn):
     Parameters
     ----------
     k : Anndata
-        original data.
+        adata for single method.
     adata_norms : ndarray
         cell to cell distance matrix.
     adata : Anndata
-        adata for single method.
+        original data.
     top_nn : ndarray
         top nearest neighbors.
 
@@ -398,21 +411,28 @@ def nn_rank_parall_exec(k, adata_norms, adata, top_nn):
     """
     if np.in1d(adata.obs.index.values, k.obs.index.values).nonzero()[0].shape[0] == adata.shape[0] and adata.shape[0] == k.shape[0]:
         adata_norms_2 = cdist(k[:, k.var.highly_variable].X.todense(), k[:, k.var.highly_variable].X.todense())
+        print("loop1")
+        top_nn_inter = top_nn.copy()
+        adata_norms_inter = adata_norms.copy()
     else:
         if len(adata.obs.index.values[0]) != len(k.obs.index.values[0]):
+            print("loop2")
             match = adata.obs.index.isin(k.obs.index.str[:-2].values)
             match_in_comp = np.in1d(k.obs.index.str[:-2].values, adata.obs.index.values).nonzero()[0]
         else:
+            print("loop3")
             match = adata.obs.index.isin(k.obs.index.values)
             match_in_comp = np.in1d(k.obs.index.values, adata.obs.index.values).nonzero()[0]
         match = np.where(match)[0]
-        adata_norms = cdist(adata[match, adata.var.highly_variable].X.todense(), adata[match, adata.var.highly_variable].X.todense())
+        adata_norms_inter = cdist(adata[match, adata.var.highly_variable].X.todense(), adata[match, adata.var.highly_variable].X.todense())
 
-        top_nn = get_top_nn(adata_norms, 30)
+        top_nn_inter = get_top_nn(adata_norms_inter, 30)
 
         adata_norms_2 = cdist(k[match_in_comp, k.var.highly_variable].X.todense(), k[match_in_comp, k.var.highly_variable].X.todense())
 
-    top_nn_new = get_batch_loc_of_top_nn(top_nn, adata_norms, adata_norms_2)
+    # print(adata_norms_2[:10, :10])
+
+    top_nn_new = get_batch_loc_of_top_nn(top_nn_inter, adata_norms_inter, adata_norms_2)
     nn_rank_change = np.zeros(top_nn_new.shape)
     for i in range(top_nn_new.shape[0]):
         for j in range(top_nn_new.shape[1]):
@@ -510,6 +530,13 @@ def main(inputs, wildcards, outputs):
         files.append(sc.read_h5ad(i))
     # files = [files[0],files[5]]
 
+    # for i in range(1, len(files)):
+    #     print(files[i].obs.index.values[0])
+    #     if len(files[i].obs.index.values[0]) != len(files[i - 1].obs.index.values[0]):
+    #         print("Exiting the program...")
+    #         import sys
+
+    #         sys.exit(0)
     # list of files = l
     cons_clust = get_consensus_clusters(files[0], files[1:])
     print("finished consensus clusters")

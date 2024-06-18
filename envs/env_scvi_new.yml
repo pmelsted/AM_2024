@@ -1,0 +1,27 @@
+name: snake
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+ # - conda-forge::python=3.9.2
+  #- numpy = 1.20.1
+  #- python=3.8.6
+  
+
+   #=1.8.2
+  #- conda-forge::matplotlib-base=3.6.0
+  #- conda-forge::scanpy=1.8.2
+  #- conda-forge::openssl=3.1.0
+  #- conda-forge::jaxlib=0.4.10=cpu_py39h4646849_0
+  - conda-forge::jaxlib=0.4.23=cpu_py39h45b9b01_0
+  - conda-forge::optax=0.1.9
+  - conda-forge::scvi-tools=1.0.4
+  - conda-forge::matplotlib-base=3.6.0
+  - conda-forge::scanpy
+  
+  #- conda-forge::matplotlib-base=3.6.0
+  #- conda-forge::matplotlib=3.6.0
+  - conda-forge::python-igraph=0.9.9
+  - conda-forge::leidenalg=0.8.8
+  - conda-forge::ml_dtypes=0.2.0

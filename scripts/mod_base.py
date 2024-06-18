@@ -2,17 +2,23 @@ import methods
 
 # import os
 
+import re
 
-# %%
+
 def main():
-    # print("derp")
-    # if(snakemake.params["input"] == "adata"):
     adata = methods.run_pp("pbmc_orig", outputs=snakemake.output)
-    # adata = methods.run(True,outputs = snakemake.output)
+    # dd = re.findall(r"\d+", snakemake.wildcards[0])
+    # if len(dd) == 2:
+    #     import scanpy as sc
+
+    #     ls = [2, 2, 2, 2, 2, 10, 10, 10, 10, 10, 30, 30, 30, 30, 30, 75, 75, 75, 75, 75, 100, 100, 100, 100, 100]
+    #     sc.tl.pca(adata, use_highly_variable=True, n_comps=ls[int(dd[1])])
+    #     sc.pp.neighbors(adata, random_state=42)
+    #     sc.tl.leiden(adata, random_state=42)
+
     methods.apply_method("none", adata, outputs=snakemake.output)
     adata_single = methods.run_pp_single_batch("pbmc_orig")
-    # adata_batched.write("data/python_to_r.h5ad",as_dense=["X"],force_dense=True)
-    # np.savetxt("data/variable_genes.csv", np.array(adata_batched.var.sort_values(by="dispersions", ascending=[False]).index), delimiter=",",fmt='%s')
+
     if "diffexp" in snakemake.wildcards[0]:
         import scanpy as sc
         import numpy as np

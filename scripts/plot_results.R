@@ -1,3 +1,4 @@
+library(ggplot2)
 theme_set(theme_gray())
 library(scales)
 library(plyr)
@@ -264,7 +265,7 @@ save_pl <- function(data,f_str, log_scale=FALSE,ret=FALSE ,leg=TRUE, text=TRUE,t
   
   if(text){
     p <- p +
-      geom_text_repel(data = p_meds, aes(x = variable, y = round(med,digits=1), label = med), 
+      geom_text_repel(data = p_meds,min.segment.length = Inf, aes(x = variable, y = round(med,digits=1), label = med), 
                       #size = 3.5,bg.color="black",bg.r=.08,color="white",segment.size=0,vjust = -2.5)
                       size = 4.5,color="black",segment.size=0,vjust = -2.7,hjust=0.8)
   }
@@ -310,6 +311,22 @@ save_pl <- function(data,f_str, log_scale=FALSE,ret=FALSE ,leg=TRUE, text=TRUE,t
   }
   
 }
+
+
+pbmc_alt_2 <- pbmc_2 %>%
+  mutate(
+    variable = case_when(
+      variable == "combat" ~ "Combat",
+      variable == "harmony" ~ "Harmony",
+      variable == "liger" ~ "LIGER",
+      variable == "ligerv2" ~ "LIGER alternative",
+      variable == "mnn" ~ "MNN",
+      variable == "scvi" ~ "SCVI",
+      variable == "seurat" ~ "Seurat",
+      variable == "seuratv2" ~ "Seurat alternative"
+    )
+    
+  ) %>% filter(variable == "LIGER alternative"|variable =="LIGER"|variable =="Seurat alternative"|variable =="Seurat")
 
 pbmc_1 <- pbmc_1 %>%
   mutate(
@@ -435,48 +452,25 @@ simul_pbmc_plot_2 <- save_pl(simul_pbmc_2,'nn_rank_emb_simul_pbmc.png',log_scale
 simul_neuro_plot_1 <- save_pl(simul_neuro_1 ,'nn_rank_simul_neuro.png',log_scale=TRUE,ret=TRUE)
 simul_neuro_plot_2 <- save_pl(simul_neuro_2 ,'nn_rank_emb_simul_neuro.png',log_scale=TRUE,ret=TRUE)
 
-pbmc_alt_2 <- pbmc_2 %>%
-  mutate(
-    variable = case_when(
-      variable == "combat" ~ "Combat",
-      variable == "harmony" ~ "Harmony",
-      variable == "LIGER" ~ "LIGER",
-      variable == "LIGERv2" ~ "LIGER alternative",
-      variable == "mnn" ~ "MNN",
-      variable == "scvi" ~ "SCVI",
-      variable == "seurat" ~ "Seurat",
-      variable == "seuratv2" ~ "Seurat alternative"
-    )
-    
-  ) %>% filter(variable == "LIGER alternative"|variable =="LIGER"|variable =="Seurat alternative"|variable =="Seurat")
-alt_plot_2 <- save_pl(pbmc_alt_2,'nn_rank_pbmc.png',log_scale=TRUE,ret=TRUE)
-alt_plot_2
+# pbmc_alt_2 <- pbmc_2 %>%
+#   mutate(
+#     variable = case_when(
+#       variable == "combat" ~ "Combat",
+#       variable == "harmony" ~ "Harmony",
+#       variable == "LIGER" ~ "LIGER",
+#       variable == "LIGERv2" ~ "LIGER alternative",
+#       variable == "mnn" ~ "MNN",
+#       variable == "scvi" ~ "SCVI",
+#       variable == "seurat" ~ "Seurat",
+#       variable == "seuratv2" ~ "Seurat alternative"
+#     )
+#     
+#   ) %>% filter(variable == "LIGER alternative"|variable =="LIGER"|variable =="Seurat alternative"|variable =="Seurat")
+# alt_plot_2 <- save_pl(pbmc_alt_2,'nn_rank_pbmc.png',log_scale=TRUE,ret=TRUE)
+#alt_plot_2
 
 
-##Neighbor plots
 
-neuro_plot_1 = neuro_plot_1 + ylab(NULL)
-combined = pbmc_plot_1 + neuro_plot_1 & theme(legend.position = "bottom") & labs(x=NULL)
-combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9))
-combined + plot_layout(guides="collect",ncol=2) + labs(tag = "level") 
-ggsave("plots/nn_plot.png", width = 6.5, height = 4, units = "in")
-##Neighbor plots - embedding
-neuro_plot_2= neuro_plot_2 + ylab(NULL)
-combined = pbmc_plot_2 + neuro_plot_2 & theme(legend.position = "bottom") & labs(x=NULL)
-combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9))&
-  scale_y_continuous(trans='log10',
-                     labels=trans_format('log10', math_format(10^.x)),limits=c(1,10000))
-combined + plot_layout(guides="collect",ncol=2) + labs(tag = "level") 
-ggsave("plots/nn_plot2.png", width = 6.5, height = 4, units = "in")
-
-# Neighbor plots - other
-
-combined =  heart_plot_2 + pbmc4k_plot2& theme(legend.position = "bottom",axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) & labs(x=NULL,y=NULL)
-combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9))&
-  scale_y_continuous(trans='log10',
-                     labels=trans_format('log10', math_format(10^.x)),limits=c(1,4500))
-combined + plot_layout(guides="collect",ncol=2)
-ggsave("plots/rank_other.png", width = 9, height = 5, units = "in")
 
 run_plots <- function(){
   diffexp_dat <- create_diffexp_dat()
@@ -541,10 +535,19 @@ run_plots <- function(){
     legend.title = element_blank()
     
   )
-  nr_matching_genes_full = c(121/133, 163.5/164.5 , 174/177, 137/155.5,172.5/897, 87/124,
-                             176/877.5)
-  nr_matching_genes_orig =  c( 121/133,175/177,174/177, 137/155.5,161/167, 153/196.5,
-                               172.5/179)
+  
+  c1 = c(123,162,175,143.5,172,136,175.5)
+  c2 = diffexp_dat[2:8,1]
+  nr_matching_genes_full = c1/c2
+  c1 = c(123,175,175,143.5,166,151,173)
+  #c1 = diffexp_dat_orig_neuro[2:8,1]
+  c2 = diffexp_dat_orig[2:8,1]
+  nr_matching_genes_orig = c1/c2
+  
+  #nr_matching_genes_full = c(121/133, 163.5/164.5 , 174/177, 137/155.5,172.5/897, 87/124,
+                             #176/877.5)
+  #nr_matching_genes_orig =  c( 121/133,175/177,174/177, 137/155.5,161/167, 153/196.5,
+                              # 172.5/179)
   nr_matching_genes = c(nr_matching_genes_full,nr_matching_genes_orig)
   methods = rep(c("BBKNN", "Combat","Harmony","LIGER","MNN","SCVI","Seurat"),2)
   type = c(rep("Corrected counts",7),rep("Uncorrected Counts",7))
@@ -641,13 +644,15 @@ run_plots_neuro<- function(){
     
   )
   
-  c1 = c(386,816,817.5,363.5,755,283,805)
+
+  
+  c1 = c(386,812.5,817,365.5,753.5,348.5,800.5)
   c2 = diffexp_dat_neuro[2:8,1]
   nr_matching_genes_full = c1/c2
-  c1 = c(386,825,817.5,363.5,800,794,820)
+  c1 = c(386,819,817,365.5,798,378,820.5)
+  #c1 = diffexp_dat_orig_neuro[2:8,1]
   c2 = diffexp_dat_orig_neuro[2:8,1]
   nr_matching_genes_orig = c1/c2
-  
   
   
   nr_matching_genes = c(nr_matching_genes_full,nr_matching_genes_orig)
@@ -686,10 +691,6 @@ p1_neuro <- p_list[1][[1]]
 p2_neuro <- p_list[2][[1]]
 p3_neuro <- p_list[3][[1]]
 
-combined_de = ((p1 + p2)/p3) | ((p1_neuro + p2_neuro)/p3_neuro)
-combined_de = combined_de + plot_layout(guides="collect") + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9),legend.position = "bottom")
-combined_de
-ggsave("plots/de_combined.png", width = 15, height = 9, units = "in")
 
 
 run_plots_simul_pbmc<- function(){
@@ -752,11 +753,11 @@ run_plots_simul_pbmc<- function(){
     legend.title = element_blank()
     
   )
-  c1 = c(114,145,156,126.5,158,85,161)
+  c1 = c(114,144,156,122,156,124,158)
   c2 = diffexp_simul_pbmc[2:8,1]
   nr_matching_genes_full = c1/c2
   nr_matching_genes_full
-  c1 = c(114,158,156,126.5,150,145,156)
+  c1 = c(114,156,156,122,149,142,155)
   c2 = diffexp_simul_pbmc_orig[2:8,1]
   nr_matching_genes_orig = c1/c2
   nr_matching_genes_orig
@@ -812,7 +813,7 @@ run_plots_simul_neuro<- function(){
                                     margin = margin(10, 0, 10, 0)))+#,axis.text.x=element_text(angle=45,vjust=1,hjust=1))+#ggtitle('Ratio of cells that change cluster')+
     xlab("Data") + ylab("Numer of genes") + labs(fill = "Model")
   
-  #p1_simul_neuro<- p0_simul_neuro + scale_y_break(c(1100,1200),ticklabels =c(1200,1500),scales=c(0.2),space = 0.1)# +
+  #p1_simul_neuro<- p1_simul_neuro + scale_y_break(c(1100,1200),ticklabels =c(1200,1500),scales=c(0.2),space = 0.1)# +
   p1_simul_neuro <- p1_simul_neuro + theme(
     axis.title.x = element_blank(),
     #axis.title.y = element_text(hjust=0.6,angle=90),
@@ -854,11 +855,11 @@ run_plots_simul_neuro<- function(){
     legend.title = element_blank()
     
   )
-  c1 = c(389,806,816.5,356,754.5,182,807)
+  c1 = c(387,801.5,812.5,356,750,355.5,802.5)
   c2 = diffexp_simul_neuro[2:8,1]
   nr_matching_genes_full = c1/c2
   nr_matching_genes_full
-  c1 = c(389,814,816,356,805,602,817)
+  c1 = c(387,810.5,812.5,356.5,796.5,381.5,811.5)
   c2 = diffexp_simul_neuro_orig[2:8,1]
   nr_matching_genes_orig = c1/c2
   nr_matching_genes_orig
@@ -900,7 +901,181 @@ p1_simul_neuro <- p_list[1][[1]]
 p2_simul_neuro <- p_list[2][[1]]
 p3_simul_neuro <- p_list[3][[1]]
 
-combined_de = ((p1_simul_pbmc + p2_simul_pbmc)/p3_simul_pbmc) | ((p1_simul_neuro + p2_simul_neuro)/p3_simul_neuro)
+
+
+#DE plot
+
+combined_de = ((p1 + p2)/p3) | ((p1_neuro + p2_neuro)/p3_neuro)
 combined_de = combined_de + plot_layout(guides="collect") + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9),legend.position = "bottom")
 combined_de
-ggsave("plots/de_simulated_combined.png", width = 15, height = 9, units = "in")
+ggsave("plots/de_combined.pdf", width = 15, height = 9, units = "in")
+
+
+
+#DE - simulations plot pmbc3k
+
+combined_simul_pbmc = p1_simul_pbmc + p2_simul_pbmc + wrap_elements(full = p3_simul_pbmc)  #& theme(legend.position = "bottom") & labs(x=NULL)
+#combined = (p1 | p2)/p3 & theme(legend.position = "bottom") & labs(x=NULL)
+combined_simul_pbmc <- combined_simul_pbmc + plot_annotation(tag_levels = "A")  & theme(plot.tag=element_text(size=9),legend.position = "bottom" )
+layout <- "
+AABB
+CCCC
+"
+combined_simul_pbmc + plot_layout(design=layout)
+ggsave("plots/de_simul_pbmc.pdf", width = 8, height = 7, units = "in")
+
+
+
+#DE - simulations plot neuro
+
+
+combined_simul_neuro = p1_simul_neuro + p2_simul_neuro+ wrap_elements(full = p3_simul_neuro) #& theme(legend.position = "bottom") & labs(x=NULL)
+combined_simul_neuro <- combined_simul_neuro + plot_annotation(tag_levels = "A")  & theme(plot.tag=element_text(size=9),legend.position = "bottom" )
+layout <- "
+AABB
+CCCC
+"
+combined_simul_neuro + plot_layout(design=layout,heights=c(3,6))
+ggsave("plots/de_simul_neuro.pdf", width = 8, height = 7, units = "in")
+
+
+
+# combined_de = ((p1_simul_pbmc + p2_simul_pbmc)/p3_simul_pbmc) | ((p1_simul_neuro + p2_simul_neuro)/p3_simul_neuro)
+# combined_de = combined_de + plot_layout(guides="collect") + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9),legend.position = "bottom")
+# combined_de
+# ggsave("plots/de_simulated_combined.png", width = 15, height = 9, units = "in")
+
+
+
+
+
+
+
+
+##Neighbor plots
+
+neuro_plot_1 = neuro_plot_1 + ylab(NULL)
+combined = pbmc_plot_1 + neuro_plot_1 & theme(legend.position = "bottom") & labs(x=NULL)
+combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9))&
+  scale_y_continuous(trans='log10',
+                     labels=trans_format('log10', math_format(10^.x)),limits=c(0.4,10000))
+combined = combined + plot_layout(guides="collect",ncol=2) + labs(tag = "level") 
+
+
+ggsave("plots/nn_plot.pdf", width = 6.5, height = 4, units = "in")
+##Neighbor plots - embedding
+neuro_plot_2= neuro_plot_2 + ylab(NULL)
+combined = pbmc_plot_2 + neuro_plot_2 & theme(legend.position = "bottom") & labs(x=NULL)
+combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9))&
+  scale_y_continuous(trans='log10',
+                     labels=trans_format('log10', math_format(10^.x)),limits=c(0.4,10000))
+combined = combined + plot_layout(guides="collect",ncol=2) + labs(tag = "level") 
+ggsave("plots/nn_plot2.pdf", width = 6.5, height = 4, units = "in")
+
+# Neighbor plots - other -emb
+
+combined =  heart_plot_2 + pbmc4k_plot2& theme(legend.position = "bottom",axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) & labs(x=NULL,y=NULL)
+combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9))&
+  scale_y_continuous(trans='log10',
+                     labels=trans_format('log10', math_format(10^.x)),limits=c(1,4500))
+combined = combined + plot_layout(guides="collect",ncol=2)
+ggsave("plots/rank_other.pdf", width = 9, height = 5, units = "in")
+# Neighbor plots - other -nonemb
+
+combined =  heart_plot_1 + pbmc4k_plot1& theme(legend.position = "bottom",axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) & labs(x=NULL,y=NULL)
+combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9))&
+  scale_y_continuous(trans='log10',
+                     labels=trans_format('log10', math_format(10^.x)),limits=c(1,4500))
+combined = combined + plot_layout(guides="collect",ncol=2)
+ggsave("plots/rank_other-non-emb.pdf", width = 9, height = 5, units = "in")
+
+alt_plot_2 <- save_pl(pbmc_alt_2,'nn_rank_pbmc.png',log_scale=TRUE,ret=TRUE)
+alt_plot_2
+ggsave("plots/rank_alt.pdf", width = 7, height = 5, units = "in")
+
+
+
+## harmony confusion run
+label=c(rep("100 PCAs", 25),rep("Repeating 50 PCAs", 25))
+pca  = c(2,4,6,8,10,12,14,18,20,22,24,26,28,30,32,34,36,38,40,42,50,60,70,80,90) 
+nn1 = c(213.0,124.5,111.0,105.5,89.0,79.5,72.0,57.5,53.0,47.5,42.5,39.0,35.0,32.5,29.5,27.0,25.0,23.5,21.5,20.5,16.5,13.0,10.0,7.0,4.5)
+cc1 = c(0.4584912812736922
+        ,0.300606520090978
+        ,0.22441243366186503
+        ,0.22327520849128127
+        ,0.19598180439727067
+        ,0.1497346474601971
+        ,0.15295678544351782
+        ,0.13362395754359363
+        ,0.13646702047005305
+        ,0.09287338893100834
+        ,0.10348749052312359
+        ,0.10064442759666414
+        ,0.09742228961334345
+        ,0.09533737680060653
+        ,0.06823351023502652
+        ,0.07107657316148597
+        ,0.09666413949962092
+        ,0.06671721000758149
+        ,0.08377558756633813
+        ,0.07050796057619407
+        ,0.09818043972706594
+        ,0.0640636846095527
+        ,0.059893858984078854
+        ,0.05477634571645185
+        ,0.041319181197877176)
+nn2 = c(183.5,99.2,86.5,76.0,60.5,52.0,43.5,33.0,28.0,24.0,21.0,18.5,17.0,15.0,13.5,12.0,10.5,9.5,8.0,7.0,16.5,19.5,19.5,18.5,18.0)
+cc2= c(0.46872630780894625
+       ,0.29264594389689164
+       ,0.21758908263836235
+       ,0.23313115996967398
+       ,0.1921910538286581
+       ,0.18517816527672476
+       ,0.13760424564063686
+       ,0.12793783169067474
+       ,0.12528430629264592
+       ,0.12566338134950722
+       ,0.08510235026535254
+       ,0.12395754359363154
+       ,0.09059893858984079
+       ,0.06159969673995451
+       ,0.09931766489764973
+       ,0.06311599696739956
+       ,0.08832448824867324
+       ,0.07429871114480668
+       ,0.06046247156937073
+       ,0.07278241091736162
+       ,0.029946929492039427
+       ,0.09287338893100834
+       ,0.10481425322213797
+       ,0.0790371493555724
+       ,0.07429871114480667)
+
+df = data.frame(cc=c(cc1,cc2),nn=c(nn1,nn2),label,pca=pca)
+p1 = ggplot(data=df, aes(x=pca, y=cc, group=label, color=label)) +
+  geom_line() + geom_point() +guides(color=guide_legend(title="PCA type")) +
+  ylab("Consensus cluster metric") + xlab("Number of PCAs") + theme(
+    legend.position="bottom",
+    panel.background = element_rect(fill = "white", 
+                                    colour = NA), panel.border = element_rect(fill = NA, 
+                                                                              colour = "grey20"), panel.grid = element_line(colour = "grey92"), 
+    panel.grid.minor = element_line(linewidth = rel(0.5)), 
+    strip.background = element_rect(fill = "grey85", 
+                                    colour = "grey20"), legend.key = element_rect(fill = "white", 
+                                                                                  colour = NA))
+
+p2 = ggplot(data=df, aes(x=pca, y=nn, group=label, color=label)) +
+  geom_line() + geom_point() +guides(color=guide_legend(title="PCA type")) +
+  ylab("NN rank") + xlab("Number of PCAs")+ theme(
+    legend.position="bottom",
+    panel.background = element_rect(fill = "white", 
+                                    colour = NA), panel.border = element_rect(fill = NA, 
+                                                                              colour = "grey20"), panel.grid = element_line(colour = "grey92"), 
+    panel.grid.minor = element_line(linewidth = rel(0.5)), 
+    strip.background = element_rect(fill = "grey85", 
+                                    colour = "grey20"), legend.key = element_rect(fill = "white", 
+                                                                                  colour = NA))
+combined = p1+ p2
+combined = combined + plot_annotation(tag_levels = "A") & theme(plot.tag=element_text(size=9),legend.position="bottom")
+combined + plot_layout(guides="collect",ncol=2)
+ggsave("plots/harmony_peturbation.pdf", width = 9, height = 5, units = "in")

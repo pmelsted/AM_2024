@@ -166,7 +166,8 @@ def parse_and_plot_rank(data, neuro=False, single=False, pbmc4k=False, heart=Fal
         #         arr[i,j] = np.median(data[i,j,:])
 
         clusters = []
-        order = np.arange(0, data[0].shape[1], 1)
+
+        order = np.arange(0, np.array(data[0]).shape[1], 1)
 
         # if neuro:
         #     clusters = np.genfromtxt("data/leiden_neuro.csv", delimiter=",", skip_header=1)[:, 1]
@@ -283,7 +284,7 @@ def parse_and_plot_rank_emb(data, neuro=False, pbmc4k=False, heart=False):
         resample_rank = np.median(np.array(resample_rank), axis=0)
 
         filt_data = [x[:7] for x in data]
-
+        print(len(filt_data))
         dic = {
             "combat": np.median(np.array([x[0] for x in filt_data]), axis=0),
             "harmony": np.median(np.array([x[1] for x in filt_data]), axis=0),
@@ -303,7 +304,7 @@ def parse_and_plot_rank_emb(data, neuro=False, pbmc4k=False, heart=False):
         data_melt = pd.melt(
             df.reset_index(),
             id_vars=["index"],
-            value_vars=["combat", "harmony", "mnn", "scvi", "seurat", "seuratv2", "downsample", "resample"],
+            value_vars=["combat", "harmony", "liger", "mnn", "scvi", "seurat", "seuratv2", "downsample", "resample"],
         )
         # print(data_melt)
 
@@ -314,7 +315,7 @@ def parse_and_plot_rank_emb(data, neuro=False, pbmc4k=False, heart=False):
         arr = np.array(data)
         arr = np.median(arr, axis=0)
         # clusters = []
-        order = np.arange(0, data[0].shape[1], 1)
+        order = np.arange(0, np.array(data[0]).shape[1], 1)
         if arr.shape[0] == 8:
             data = {
                 "combat": arr[0],

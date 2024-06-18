@@ -580,7 +580,7 @@ def run_pp_single_batch(data):
     return adata_single
 
 
-def apply_method(meth, adata, inputs=None, outputs=None):
+def apply_method(meth, adata, inputs=None, outputs=None, diffexp=False):
     """
     Run a given batch correction method on the data.
 
@@ -606,14 +606,8 @@ def apply_method(meth, adata, inputs=None, outputs=None):
     adata_comb = adata.copy()
 
     if meth == "none":
-        # adata_comb.write("data/python_to_r.h5ad",as_dense=["X"],force_dense=True)
-        # adata_comb.write("python_to_r.h5ad")
-        # np.savetxt("variable_genes.csv", np.array(adata_comb.var.sort_values(by="dispersions").index), delimiter=",",fmt='%s')
-        # pd.DataFrame(data=adata.layers["counts"].todense(), index=adata.obs_names, columns=adata.var_names).to_csv(outputs[3])
         pd.DataFrame(data=adata.X.todense(), index=adata.obs_names, columns=adata.var_names).to_csv(outputs[2])
         pd.DataFrame(data=adata.obsm["X_pca"], index=adata.obs_names).to_csv(outputs[5])
-        # adata_comb.write("python_to_r.h5ad")
-        # np.savetxt("variable_genes.csv", np.array(adata_comb.var.sort_values(by="dispersions").index), delimiter=",",fmt='%s')
         np.savetxt(outputs[6], np.array(adata_comb.obs["batch"]), delimiter=",", fmt="%s")
         np.savetxt(
             outputs[4],
@@ -638,7 +632,7 @@ def apply_method(meth, adata, inputs=None, outputs=None):
         adata_comb.X = sparse.csr_matrix(t)
     if meth == "mnn":
         adata_comb.X = sparse.csr_matrix(np.array(pd.read_csv(inputs[1], sep=" ", header=None)))
-
+        # sc.external.pp.mnn_correct(adata_comb, batch_key="batch")[0][0].X
         adata_comb.X = sparse.csr_matrix(adata_comb.X)
         # sc.pp.neighbors(adata_comb)
         # sc.tl.leiden(adata_comb)
@@ -650,10 +644,35 @@ def apply_method(meth, adata, inputs=None, outputs=None):
         model = scvi.model.SCVI(adata_comb)
 
         model.train()
-        X = model.get_normalized_expression()
+
+        if diffexp:
+            X = model.posterior_predictive_sample(adata_comb, n_samples=1).to_scipy_sparse()
+        else:
+            X = model.get_normalized_expression()
         latent = model.get_latent_representation()
         adata_comb.obsm["X_scVI"] = latent
         adata_comb.X = sparse.csr_matrix(X)
+        sc.pp.neighbors(adata_comb, use_rep="X_scVI", random_state=42)
+        sc.tl.leiden(adata_comb, random_state=42)
+        return adata_comb
+
+    if meth == "scvi_nobatch":
+        import scvi
+
+        scvi.settings.seed = 42
+        scvi.model.SCVI.setup_anndata(adata_comb, layer="counts")
+        model = scvi.model.SCVI(adata_comb)
+
+        model.train()
+
+        if diffexp:
+            X = model.posterior_predictive_sample(adata_comb, n_samples=1)
+        else:
+            X = model.get_normalized_expression()
+        latent = model.get_latent_representation()
+        adata_comb.obsm["X_scVI"] = latent
+        if not sparse.issparse(X):
+            adata_comb.X = sparse.csr_matrix(X)
         sc.pp.neighbors(adata_comb, use_rep="X_scVI", random_state=42)
         sc.tl.leiden(adata_comb, random_state=42)
         return adata_comb
@@ -846,33 +865,6 @@ def get_mw(norms, adata_comb):
     top_nn_norms = get_top_nn_norm(norms)
     top_nn_norms_comb = get_top_nn_norm(norms_comb)
     return mannwhitneyu(top_nn_norms[2, :], top_nn_norms_comb[2, :])
-
-
-# def get_all_neighs_from_norm(norm):
-#     mat = []
-#     for i in range(norm.shape[0]):
-#         mat.append(get_neighs_from_norm(norm, i, norm.shape[0]))
-#     return np.array(mat)
-
-
-# def get_mean_object(mat):
-#     arr = []
-#     for i in mat:
-#         arr.append(np.mean(i))
-#     return np.array(arr)
-
-
-# def return_ind(adata):
-#     np.random.seed(42)
-#     indices = np.random.permutation(adata.X.shape[0])
-
-#     ind = np.vstack((np.arange((adata.X.shape[0])), np.zeros(adata.X.shape[0]))).T
-#     split_1, split_2 = indices[: int(adata.X.shape[0] / 2)], indices[int(adata.X.shape[0] / 2) :]
-
-#     ind[split_1, 1] = 0
-#     ind[split_2, 1] = 1
-#     # ind = ind[:,1]
-#     return ind
 
 
 def diff_clust(clust, clust_comb, adata):

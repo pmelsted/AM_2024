@@ -5,7 +5,12 @@ import methods
 
 def main():
     adata = anndata.read_h5ad(snakemake.input[0])
-    adata_scvi = methods.apply_method("scvi", adata)
+
+    if "diffexp" in snakemake.wildcards[0]:
+        adata_scvi = methods.apply_method("scvi", adata, diffexp=True)
+    else:
+        adata_scvi = methods.apply_method("scvi", adata)
+
     if "diffexp" in snakemake.wildcards[0]:
         import pandas as pd
         import numpy as np
