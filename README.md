@@ -22,6 +22,7 @@ The following software/packages was used in the workflow. All packages from cond
 * pyliger 0.2.0
 * bustools 0.43.0
 * kallisto 0.50.0
+* sva 3.2 - combat-seq
 
 ## Data
 
@@ -40,4 +41,8 @@ The following software/packages was used in the workflow. All packages from cond
 #### PBMC4K
 
  4k PBMCs from a Healthy Donor - https://www.10xgenomics.com/datasets/4-k-pbm-cs-from-a-healthy-donor-2-standard-2-1-0
+
+#### Jejunum
+
+5k Human Jejunum Nuclei Isolated with Chromium Nuclei Isolation Kit - https://www.10xgenomics.com/datasets/5k-human-jejunum-nuclei-isolated-with-chromium-nuclei-isolation-kit-3-1-standard
 
