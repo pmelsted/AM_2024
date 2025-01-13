@@ -17,6 +17,12 @@ def main():
 
     merged_adata = merged_adata[order]
     merged_adata.obs["leiden"] = merged_adata.obs["cluster"].astype("category")
+
+    #liger appends the batch to the cell name i.e. obs_names
+    merged_adata.obs_names = merged_adata.obs_names.str[:-2]
+    #liger uses batch as categorical variable when its simpler to parse it and compare as float
+    merged_adata.obs["batch"] = merged_adata.obs["batch"].astype("float")
+
     if "diffexp" in snakemake.wildcards[0]:
         # import pandas as pd
 

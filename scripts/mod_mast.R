@@ -5,6 +5,7 @@ run <- function(){
   adata <- create_data()
   adata_bbknn <- create_data("bbknn")
   adata_combat <- create_data("combat")
+  adata_combatseq <- create_data("combatseq")
   adata_harmony <- create_data("harmony")
   adata_liger <- create_data("liger")
   adata_mnn <- create_data("mnn")
@@ -12,11 +13,11 @@ run <- function(){
   adata_seurat <- create_data("seurat")
   
   
-  methods <- list(adata,adata_bbknn,adata_combat,adata_harmony,adata_liger,adata_mnn,adata_scvi,adata_seurat)
+  methods <- list(adata,adata_bbknn,adata_combat,adata_combatseq,adata_harmony,adata_liger,adata_mnn,adata_scvi,adata_seurat)
   
   batch_clust_data <- test_batch_cl_data(methods)
   
-  orig_clust_data <- test_orig_cl_data(list(adata,adata_bbknn,adata_combat,adata_harmony,adata_liger,adata_mnn,adata_scvi,adata_seurat),adata)
+  orig_clust_data <- test_orig_cl_data(list(adata,adata_bbknn,adata_combat,adata_combatseq,adata_harmony,adata_liger,adata_mnn,adata_scvi,adata_seurat),adata)
   
   write.table(batch_clust_data,file=snakemake@output[[1]],row.names=FALSE,col.names=FALSE)
   write.table(orig_clust_data,file=snakemake@output[[2]],row.names=FALSE,col.names=FALSE)
@@ -64,6 +65,9 @@ create_data <- function(name=""){
   }
   if(grepl("neuro",snakemake@wildcards[[1]])){
     proj = "neuro"
+  }
+  if(grepl("jejunum",snakemake@wildcards[[1]])){
+    proj = "jejunum"
   }
   data <- CreateSeuratObject(counts = t(countsData), project = proj)
   
@@ -116,6 +120,10 @@ get_genes <- function(diff_exp_genes){
   if(grepl("neuro",snakemake@wildcards[[1]])){
     gene1 = "myl9"
     gene2 = "ctss"
+  }
+  if(grepl("jejunum",snakemake@wildcards[[1]])){
+    gene1 = "muc2"
+    gene2 = "trpm5"
   }
   gene_search1 <- which(genes == gene1,arr.ind=T)
   gene_search2 <- which(genes == gene2,arr.ind=T)
@@ -194,6 +202,10 @@ test_batch_cl_data <- function(methods){
       gene1 = "myl9"
       gene2 = "ctss"
     }
+    if(grepl("jejunum",snakemake@wildcards[[1]])){
+      gene1 = "muc2"
+      gene2 = "trpm5"
+    }
     index1 <- which(tolower(rowData(data.sca)$primerid)== gene1)
     index2 <- which(tolower(rowData(data.sca)$primerid)== gene2)
     if(length(index1) == 1){
@@ -269,6 +281,10 @@ test_orig_cl_data <- function(methods,orig){
     if(grepl("neuro",snakemake@wildcards[[1]])){
       gene1 = "myl9"
       gene2 = "ctss"
+    }
+    if(grepl("jejunum",snakemake@wildcards[[1]])){
+      gene1 = "muc2"
+      gene2 = "trpm5"
     }
     index1 <- which(tolower(rowData(data.sca_filt)$primerid)== gene1)
     index2 <- which(tolower(rowData(data.sca_filt)$primerid)== gene2)

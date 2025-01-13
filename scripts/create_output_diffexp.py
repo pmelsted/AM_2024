@@ -42,22 +42,17 @@ def read_list(filename):
 
 def main(inputs, wildcards, outputs):
     # compare total gene counts between B cells and cd8a t cells
-    if "diffexp-pbmc" in wildcards[0]:
-        p_val_string = "data/diffexp_pbmc_full.pickle"
-        p_val_use_orig_x_string = "data/diffexp_pbmc_orig_x.pickle"
-        # p_val_mast_string = "data/diffexp_pbmc_mast.pickle"
-    if "diffexp-neuro" in wildcards[0]:
-        p_val_string = "data/diffexp_neuro_full.pickle"
-        p_val_use_orig_x_string = "data/diffexp_neuro_orig_x.pickle"
-    if "simul-pbmc" in wildcards[0]:
-        p_val_string = "data/diffexp_simul_pbmc_full.pickle"
-        p_val_use_orig_x_string = "data/diffexp_simul_pbmc_orig_x.pickle"
-        # p_val_mast_string = "data/diffexp_pbmc_mast.pickle"
-    if "simul-neuro" in wildcards[0]:
-        p_val_string = "data/diffexp_simul_neuro_full.pickle"
-        p_val_use_orig_x_string = "data/diffexp_simul_neuro_orig_x.pickle"
-        # p_val_mast_string = "data/diffexp_pbmc_mast.pickle"
 
+    ind = [index for index, c in enumerate(wildcards[0]) if c == "-"]
+    if "simul" in wildcards[0]:
+        real_str = wildcards[0][ind[1]+1:ind[2]]
+        p_val_string = f"data/diffexp_simul_{real_str}_full.pickle"
+        p_val_use_orig_x_string = f"data/diffexp_simul_{real_str}_orig_x.pickle"
+    else:
+        real_str = wildcards[0][ind[0]+1:ind[1]]
+        p_val_string = f"data/diffexp_{real_str}_full.pickle"
+        p_val_use_orig_x_string = f"data/diffexp_{real_str}_orig_x.pickle"
+   
     # read p files 1 and p files 2
     p_file_full = np.loadtxt(inputs[0], delimiter=" ")
     p_file_use_orig_clust = np.loadtxt(inputs[1], delimiter=" ")

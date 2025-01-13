@@ -1,13 +1,6 @@
-METHODS_QQ = ["combat","harmony","mnn","seurat","single"]
-METHODS = ["","bbknn","combat","harmony","mnn","scvi","seurat","seurat_v2"]
-ORIG_OUTPUT = [".h5ad","_single.h5ad","_to_csv.csv","_to_csv_raw.csv","_variable_genes.csv","_pca_to_csv.csv","_batch.csv"]
-data_dir={
-    'pbmc4k':"data/filtered_gene_bc_matrices/hg19/",
-    'neuro': "data/1M_neurons_neuron20k.h5",
 
-
-}
 heart_files=[f"data/heart-{i}.txt" for i in range(25)]
+jejunum_files=[f"data/jejunum-{i}.txt" for i in range(25)]
 neuro_files=[f"data/neuro-{i}.txt" for i in range(25)]
 pbmc3k_files=[f"data/pbmc3k-{i}.txt" for i in range(25)]
 pbmc4k_files=[f"data/pbmc4k-{i}.txt" for i in range(25)]
@@ -15,13 +8,19 @@ diffexp_simul_pbmc_files=[f"data/diffexp-simul-pbmc-{i}.txt" for i in range(25)]
 diffexp_simul_neuro_files=[f"data/diffexp-simul-neuro-{i}.txt" for i in range(25)]
 diffexp_pbmc_files=[f"data/diffexp-pbmc-{i}.txt" for i in range(25)]
 diffexp_neuro_files=[f"data/diffexp-neuro-{i}.txt" for i in range(25)]
+diffexp_jejunum_files=[f"data/diffexp-jejunum-{i}.txt" for i in range(25)]
 simul_pbmc_files =[f"data/simul-pbmc-{i}.txt" for i in range(25)]
 simul_neuro_files =[f"data/simul-neuro-{i}.txt" for i in range(25)]
-all_files = heart_files + neuro_files + pbmc3k_files + pbmc4k_files + diffexp_simul_pbmc_files + diffexp_simul_neuro_files + diffexp_pbmc_files + diffexp_neuro_files + simul_pbmc_files + simul_neuro_files
-
-
+all_files = heart_files + jejunum_files + neuro_files + pbmc3k_files + pbmc4k_files + diffexp_simul_pbmc_files + diffexp_simul_neuro_files + diffexp_pbmc_files + diffexp_neuro_files + diffexp_jejunum_files + simul_pbmc_files + simul_neuro_files
+all_outs = [f"data/{{adata}}{m}.h5ad" for m in ["","_bbknn","_combat","_combatseq","_harmony","_liger","_mnn","_scvi","_seurat","_seurat_v2"]]
+in_pickles = [f"data/nn_rank_file_{m}.pickle" for m in ["pbmc3k", "neuro","pbmc4k","heart","jejunum"]]
+in_pickles_emb = [f"data/nn_rank_emb_file_{m}.pickle" for m in ["pbmc3k", "neuro","pbmc4k","heart","jejunum"]]
+plot_files = [f"data/{m}_plot.csv" for m in ["pbmc3k", "neuro","pbmc4k","heart","jejunum"]]
+plot_emb_files = [f"data/{m}_emb_plot.csv" for m in ["pbmc3k", "neuro","pbmc4k","heart","jejunum"]]
+diffexp_plot_files = [f"data/diffexp_{m}.pickle" for m in ["pbmc_full","pbmc_orig_x","neuro_full","neuro_orig_x","jejunum_full","jejunum_orig_x","simul_pbmc_full","simul_pbmc_orig_x","simul_neuro_full","simul_neuro_orig_x"]]
+diffexp_plot_files_out = [f"data/diffexp_{m}.csv" for m in ["pbmc_full","pbmc_orig_x","neuro_full","neuro_orig_x","jejunum_full","jejunum_orig_x","simul_pbmc_full","simul_pbmc_orig_x","simul_neuro_full","simul_neuro_orig_x"]]
 def make_output_names(prefix,simul=False,simul_string=None,prepend_letters=False):
-    postfixes = ".h5ad _single.h5ad _to_csv.csv _to_csv_raw.csv _variable_genes.csv _pca_to_csv.csv _batch.csv".split()
+    postfixes = ".h5ad _single.h5ad _to_csv.csv _to_csv_raw.csv _variable_genes.csv _pca_to_csv.csv _batch.csv _to_csv_filt_raw.csv".split()
     if simul:
         if simul_string is not None:
             ss = "simul-"+simul_string
@@ -43,6 +42,10 @@ def make_output_names(prefix,simul=False,simul_string=None,prepend_letters=False
         for i in range(len(ls)):
             ls[i] = letters[i] + " = " + ls[i]
     return ls
+
+
+
+
 
 
  
@@ -78,16 +81,28 @@ rule run_all_pbmc4k:
         "data/pbmc4k-all.txt"
     shell:
         "echo job done > {output}"
+rule run_all_jejunum:
+    input: jejunum_files
+    output:
+        "data/jejunum-all.txt"
+    shell:
+        "echo job done > {output}"
 rule run_all_diffexp_pbmc:
     input: diffexp_pbmc_files
     output:
-        "data/diffexp_pbmc-all.txt"
+        "data/diffexp-pbmc-all.txt"
     shell:
         "echo job done > {output}"
 rule run_all_diffexp_neuro:
     input: diffexp_neuro_files
     output:
         "data/diffexp-neuro-all.txt"
+    shell:
+        "echo job done > {output}"
+rule run_all_diffexp_jejunum:
+    input: diffexp_jejunum_files
+    output:
+        "data/diffexp-jejunum-all.txt"
     shell:
         "echo job done > {output}"
 rule run_all_diffexp_simul_pbmc:
@@ -106,6 +121,8 @@ rule run_all_simul_pbmc:
     input: simul_pbmc_files
     output:
         "data/simul-pbmc-all.txt"
+    shell:
+        "echo job done > {output}"
 rule run_all_simul_neuro:
     input: simul_neuro_files
     output:
@@ -168,6 +185,16 @@ rule create_adata_neuro:
     script:
         "scripts/mod_base_neuro.py"
 
+rule create_adata_jejunum:
+    input:
+        "data/5k_human_jejunum_CNIK_3pv3_raw_feature_bc_matrix.h5"
+    output:
+        make_output_names("jejunum")
+    conda:
+        "envs/env.yml"
+    script:
+        "scripts/mod_base_jejunum.py"
+
 
 #DIFFEXP H5AD creation
 
@@ -194,7 +221,16 @@ rule create_adata_neuro_diffexp:
     script:
         "scripts/mod_base_neuro.py"
 
+rule create_adata_jejunum_diffexp:
+    input:
+        "data/5k_human_jejunum_CNIK_3pv3_raw_feature_bc_matrix.h5"
+    output:
+        make_output_names("diffexp-jejunum")
 
+    conda:
+        "envs/env.yml"
+    script:
+        "scripts/mod_base_jejunum.py"
 
 
 
@@ -226,7 +262,8 @@ rule create_adata_heart:
         d = "data/{adata,heart(?![\w\d_-])|heart-\d+}_to_csv_raw.csv",
         e = "data/{adata,heart(?![\w\d_-])|heart-\d+}_variable_genes.csv",
         f = "data/{adata,heart(?![\w\d_-])|heart-\d+}_pca_to_csv.csv",
-        g = "data/{adata,heart(?![\w\d_-])|heart-\d+}_batch.csv"
+        g = "data/{adata,heart(?![\w\d_-])|heart-\d+}_batch.csv",
+        h = "data/{adata,heart(?![\w\d_-])|heart-\d+}_to_csv_filt_raw.csv"
         #make_output_names("heart",prepend_letters=True)
     params:
         input="{adata}"
@@ -250,7 +287,8 @@ rule create_adata_pbmc4k:
         d = "data/{adata,pbmc4k(?![\w\d_-])|pbmc4k-\d+}_to_csv_raw.csv",
         e = "data/{adata,pbmc4k(?![\w\d_-])|pbmc4k-\d+}_variable_genes.csv",
         f = "data/{adata,pbmc4k(?![\w\d_-])|pbmc4k-\d+}_pca_to_csv.csv",
-        g = "data/{adata,pbmc4k(?![\w\d_-])|pbmc4k-\d+}_batch.csv"
+        g = "data/{adata,pbmc4k(?![\w\d_-])|pbmc4k-\d+}_batch.csv",
+        h = "data/{adata,pbmc4k(?![\w\d_-])|pbmc4k-\d+}_to_csv_filt_raw.csv"
         #make_output_names("pbmc4k",prepend_letters=True)
     params:
         input="{adata}"
@@ -272,17 +310,6 @@ rule pbmc4k_downsample_run:
         "scripts/mod_down.py"
 
 
-rule pbmc4k_resample_run:
-    input:
-        rules.create_adata_pbmc4k.output.a
-    output:
-        a = "data/{adata,pbmc4k(?![\w\d_-])|pbmc4k-\d+}_resample.h5ad"
-    conda:
-        "envs/env_bus.yml" 
-    script:
-        "scripts/mod_resample.py"
-
-
 
 rule heart_downsample_run:
     input:
@@ -295,30 +322,7 @@ rule heart_downsample_run:
     script:
         "scripts/mod_down.py"
 
-
-rule heart_resample_run:
-    input:
-        rules.create_adata_heart.output.a
-    output:
-        a = "data/{adata,heart(?![\w\d_-])|heart-\d+}_resample.h5ad"
-    conda:
-        "envs/env_bus.yml" 
-    script:
-        "scripts/mod_resample.py"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+##Method runs
 
 
 
@@ -427,6 +431,31 @@ rule combat_run:
     script:
         "scripts/mod_combat.py"
 
+
+rule combatseq_run_1:
+    input:
+        "data/{adata}_to_csv.csv",
+        "data/{adata}_batch.csv",
+        "data/{adata}_variable_genes.csv",
+        "data/{adata}_to_csv_filt_raw.csv",
+
+    output:
+        temp("data/r_to_{adata}_combatseq.csv")
+    conda:
+        "envs/env_combatseq.yml"
+    script:
+        "scripts/mod_combatseq.R"
+rule combatseq_run_2:
+    input:
+        "data/{adata}.h5ad",
+        "data/r_to_{adata}_combatseq.csv"
+    output:
+        "data/{adata}_combatseq.h5ad"
+    conda:
+        "envs/env.yml"
+    script:
+        "scripts/mod_combatseq.py"
+
 rule bbknn_run:
     input:
         "data/{adata}.h5ad"
@@ -443,9 +472,19 @@ rule scvi_run:
     output:
         "data/{adata}_scvi.h5ad"
     conda:
-        "envs/env_scvi.yml"
+        "envs/env_scvi_new.yml"
     script:
         "scripts/mod_scvi.py"
+
+rule scvi_nobatch_run:
+    input:
+        "data/{adata}.h5ad"
+    output:
+        "data/{adata}_scvi_nobatch.h5ad"
+    conda:
+        "envs/env_scvi_new.yml"
+    script:
+        "scripts/mod_scvi_nobatch.py"
 rule liger_run:
     input:
         "data/{adata}.h5ad"
@@ -468,22 +507,12 @@ rule liger_v2_run:
 
 
 
-
+# full output runs for one iteration
 
 rule run_pbmc_orig:
     input:
-        #expand("{{adata}}_{method}.h5ad",method=METHODS)
-        #expand("data/{{adata}}.h5ad", i = ITER),
-        "data/{adata}.h5ad",
-        "data/{adata}_bbknn.h5ad",
-        "data/{adata}_combat.h5ad",
-        "data/{adata}_harmony.h5ad",
-        "data/{adata}_liger.h5ad",
-        "data/{adata}_liger_v2.h5ad",
-        "data/{adata}_mnn.h5ad",
-        "data/{adata}_scvi.h5ad",
-        "data/{adata}_seurat.h5ad",
-        "data/{adata}_seurat_v2.h5ad"
+        all_outs
+
     output:
         "data/{adata,pbmc3k(?![\w\d_-])|pbmc3k-\d+}.txt"
 
@@ -497,16 +526,7 @@ rule run_neuro:
     input:
         #expand("{{adata}}_{method}.h5ad",method=METHODS)
         #expand("data/{{adata}}.h5ad", i = ITER),
-        "data/{adata}.h5ad",
-        "data/{adata}_bbknn.h5ad",
-        "data/{adata}_combat.h5ad",
-        "data/{adata}_harmony.h5ad",
-        "data/{adata}_liger.h5ad",
-        "data/{adata}_liger_v2.h5ad",
-        "data/{adata}_mnn.h5ad",
-        "data/{adata}_scvi.h5ad",
-        "data/{adata}_seurat.h5ad",
-        "data/{adata}_seurat_v2.h5ad"
+        all_outs
 
     output:
         "data/{adata,neuro|neuro-\d+}.txt"
@@ -516,23 +536,28 @@ rule run_neuro:
         "scripts/create_output.py"
 
 
+rule run_jejunum:
+    input:
+        #expand("{{adata}}_{method}.h5ad",method=METHODS)
+        #expand("data/{{adata}}.h5ad", i = ITER),
+        all_outs
+    output:
+        "data/{adata,jejunum-(?![\w\d_-])|jejunum-\d+}.txt"
+
+    conda:
+        "envs/env.yml"
+    script:
+        "scripts/create_output.py"
+
 rule run_pbmc4k:
     input:
         #expand("{{adata}}_{method}.h5ad",method=METHODS)
         #expand("data/{{adata}}.h5ad", i = ITER),
-        "data/{adata}.h5ad",
-        "data/{adata}_bbknn.h5ad",
-        "data/{adata}_combat.h5ad",
-        "data/{adata}_harmony.h5ad",
-        "data/{adata}_liger.h5ad",
-        "data/{adata}_mnn.h5ad",
-        "data/{adata}_scvi.h5ad",
-        "data/{adata}_seurat.h5ad",
-        "data/{adata}_seurat_v2.h5ad",
+        all_outs,
         #"data/{adata}_down.h5ad",
         #"data/{adata}_resample.h5ad"
         rules.pbmc4k_downsample_run.output.a,
-        rules.pbmc4k_resample_run.output.a
+        #rules.pbmc4k_resample_run.output.a
     output:
         "data/{adata,pbmc4k|pbmc4k-\d+}.txt"
     conda:
@@ -547,18 +572,9 @@ rule run_heart:
     input:
         #expand("{{adata}}_{method}.h5ad",method=METHODS)
         #expand("data/{{adata}}.h5ad", i = ITER),
-        "data/{adata}.h5ad",
-        "data/{adata}_bbknn.h5ad",
-        "data/{adata}_combat.h5ad",
-        "data/{adata}_harmony.h5ad",
-        "data/{adata}_liger.h5ad",
-        "data/{adata}_mnn.h5ad",
-        "data/{adata}_scvi.h5ad",
-        "data/{adata}_seurat.h5ad",
-        "data/{adata}_seurat_v2.h5ad",
-        #"data/{adata}_down.h5ad",
+        all_outs,
         rules.heart_downsample_run.output.a,
-        rules.heart_resample_run.output.a
+        #rules.heart_resample_run.output.a
         #"data/{adata}_resample.h5ad"
     output:
         "data/{adata,heart|heart-\d+}.txt"
@@ -575,14 +591,7 @@ rule run_simul_pbmc:
     input:
         #expand("{{adata}}_{method}.h5ad",method=METHODS)
         #expand("data/{{adata}}.h5ad", i = ITER),
-        "data/{adata}.h5ad",
-        "data/{adata}_bbknn.h5ad",
-        "data/{adata}_combat.h5ad",
-        "data/{adata}_harmony.h5ad",
-        "data/{adata}_mnn.h5ad",
-        "data/{adata}_scvi.h5ad",
-        "data/{adata}_seurat.h5ad",
-        "data/{adata}_seurat_v2.h5ad"
+        all_outs
     output:
         "data/{adata,simul-pbmc|simul-pbmc-\d+}.txt"
     conda:
@@ -594,14 +603,7 @@ rule run_simul_neuro:
     input:
         #expand("{{adata}}_{method}.h5ad",method=METHODS)
         #expand("data/{{adata}}.h5ad", i = ITER),
-        "data/{adata}.h5ad",
-        "data/{adata}_bbknn.h5ad",
-        "data/{adata}_combat.h5ad",
-        "data/{adata}_harmony.h5ad",
-        "data/{adata}_mnn.h5ad",
-        "data/{adata}_scvi.h5ad",
-        "data/{adata}_seurat.h5ad",
-        "data/{adata}_seurat_v2.h5ad"
+        all_outs
     output:
         "data/{adata,simul-neuro|simul-neuro-\d+}.txt"
     conda:
@@ -622,6 +624,7 @@ rule run_diffexp_pre_r:
         "data/{adata}.h5ad",
         "data/{adata}_bbknn.h5ad",
         "data/{adata}_combat.h5ad",
+        "data/{adata}_combatseq.h5ad",
         "data/{adata}_harmony.h5ad",
         "data/{adata}_liger.h5ad",
         "data/{adata}_mnn.h5ad",
@@ -665,7 +668,20 @@ rule run_diffexp_neuro:
         "scripts/create_output_diffexp.py"
 
 
-rule run_diffexp_pbmc_simul:
+rule run_diffexp_jejunum:
+    input:
+        rules.run_diffexp_pre_r.output.a,
+        rules.run_diffexp_pre_r.output.b
+
+    output:
+        "data/{adata,diffexp-jejunum|diffexp-jejunum-\d+}.txt"
+    conda:
+        "envs/env.yml"
+    script:
+        "scripts/create_output_diffexp.py"
+
+
+rule run_diffexp_simul_pbmc:
     input:
         rules.run_diffexp_pre_r.output.a,
         rules.run_diffexp_pre_r.output.b
@@ -679,7 +695,7 @@ rule run_diffexp_pbmc_simul:
 
 
 
-rule run_diffexp_pbmc_neuro:
+rule run_diffexp_simul_neuro:
     input:
         rules.run_diffexp_pre_r.output.a,
         rules.run_diffexp_pre_r.output.b
@@ -690,3 +706,28 @@ rule run_diffexp_pbmc_neuro:
         "envs/env.yml"
     script:
         "scripts/create_output_diffexp.py"
+
+#Plotting file rules.
+
+rule create_nn_plot_files:
+    input:
+        in_pickles,
+        in_pickles_emb
+    output:
+        plot_files,
+        plot_emb_files
+    conda:
+        "envs/env.yml"
+    script:
+        "scripts/batch_report.py"
+
+rule create_diffexp_plot_files:
+    input:
+        diffexp_plot_files
+    output:
+        diffexp_plot_files_out
+    conda:
+        "envs/env.yml"
+    script:
+        "scripts/diffexp_report.py"
+

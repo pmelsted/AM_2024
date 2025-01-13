@@ -16,7 +16,8 @@ def main():
     #     adata = methods.run(outputs = snakemake.output)
     # else:
     #     adata = methods.run(True,outputs = snakemake.output)
-    adata = methods.run_pp("neuro", outputs=snakemake.output)
+    diffexp = True if "diffexp" in snakemake.wildcards[0] else False
+    adata = methods.run_pp("neuro", outputs=snakemake.output,diffexp=diffexp)
     # adata = methods.run(True,outputs = snakemake.output)
     methods.apply_method("none", adata, outputs=snakemake.output)
     adata_single = methods.run_pp_single_batch("neuro")

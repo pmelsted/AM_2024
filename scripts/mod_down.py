@@ -106,7 +106,9 @@ def run_sampling(ratio, param):
         os.system(
             "wget -O data/10x_version2_whitelist.txt https://github.com/BUStools/getting_started/releases/download/getting_started/10xv2_whitelist.txt"
         )
-    if not (os.path.isfile(idx_file) or os.path.isfile(t2g_file)):
+    if (os.path.isfile(idx_file)) and (os.path.isfile(t2g_file)):
+        pass
+    else:
         for c in commands0:
             os.system(c)
 

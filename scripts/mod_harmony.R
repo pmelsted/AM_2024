@@ -7,13 +7,13 @@ run <- function(){
   colnames(pcaData) <- paste0("PC_", 1:length(colnames(pcaData)))
 
 
-  # emb = as.numeric(unlist(regmatches(snakemake@input[[1]], gregexpr("[[:digit:]]+", snakemake@input[[1]],))))[2]+1
-  # nr = c(2,4,6,8,10,12,14,18,20,22,24,26,28,30,32,34,36,38,40,42,50,60,70,80,90,100)
+  #emb = as.numeric(unlist(regmatches(snakemake@input[[1]], gregexpr("[[:digit:]]+", snakemake@input[[1]],))))[2]+1
+  #nr = c(2,4,6,8,10,12,14,18,20,22,24,26,28,30,32,34,40,43,46,48,50,60,70,80,90,100)
   # print(emb)
   #print(nr[emb])
-  # if(nr[emb] > 50){
-  #  pcaData <- cbind(pcaData,pcaData)
-  # }
+  #if(nr[emb] > 50){
+  # pcaData <- cbind(pcaData,pcaData)
+  #}
   
   data <- CreateSeuratObject(counts = t(countsData), project = "data")
   #data[["pca"]] <- CreateDimReducObject(embeddings = as.matrix(pcaData[,1:nr[emb]]), key = "PC_", assay = DefaultAssay(data))

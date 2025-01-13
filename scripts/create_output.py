@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+from os.path import exists
 import pickle
 import numpy as np
-from os.path import exists
 import scanpy as sc
 import pandas as pd
 
@@ -12,13 +11,50 @@ from methods import get_top_nn
 from methods import get_batch_loc_of_top_nn
 
 from scipy.stats import mannwhitneyu
-
-
 from scipy.spatial.distance import cdist
-import multiprocessing
-
+from sklearn.metrics.cluster import adjusted_rand_score
 
 # %%
+
+def error_check_adata(orig,new_list,new_list_names):
+    """
+    Perform error checks on AnnData objects.
+    Parameters:
+    - orig (AnnData): The original AnnData object.
+    - new_list (list or AnnData): The list of new AnnData objects or a single AnnData object.
+    - new_list_names (list or str): The list of names for the new AnnData objects or a single name.
+    Raises:
+    - AssertionError: If any of the error checks fail.
+    Returns:
+    - None
+    """
+    
+    if not isinstance(new_list,list):
+        new_list_cp = [new_list]
+    else:
+        new_list_cp = new_list
+    for i in range(len(new_list_cp)):
+        if "v2" not in new_list_names[i] and "down" not in new_list_names[i] and "":
+            assert orig.shape == new_list[i].shape, new_list_names[i] + "Shape mismatch"
+            assert orig.var_names.equals(new_list[i].var_names), new_list_names[i] + " Var mismatch"
+            assert orig.obs_names.equals(new_list[i].obs_names), new_list_names[i] + " Obs mismatch"
+            assert orig.var.index.equals(new_list[i].var.index), new_list_names[i] + " Var index mismatch"
+            assert orig.obs.index.equals(new_list[i].obs.index), new_list_names[i] + " Obs index mismatch"
+            var_shape = orig.var.columns.shape[0]
+            obs_shape = orig.obs.columns.shape[0]
+            assert orig.var.columns[:var_shape].equals(new_list[i].var.columns[:var_shape]), new_list_names[i] + " Var columns mismatch"
+            assert orig.obs.columns[:obs_shape].equals(new_list[i].obs.columns[:obs_shape]), new_list_names[i] + " Obs columns mismatch"
+            #assert orig.var.dtypes.equals(new_list[i].var.dtypes), "Var dtypes mismatch"
+            #assert orig.obs.dtypes.equals(new_list[i].obs.dtypes), "Obs dtypes mismatch"
+            assert orig.var.iloc[:,:var_shape].equals(new_list[i].var.iloc[:,:var_shape]), new_list_names[i] + " Var values mismatch"
+            assert orig.obs.drop("leiden",axis=1).equals(new_list[i].obs.iloc[:,:obs_shape].drop("leiden",axis=1)), new_list_names[i] + "Obs values mismatch"
+        #assert orig.uns == new_list[i].uns, "Uns mismatch"
+        #assert orig.obsm == new_list[i].obsm, "Obsm mismatch"
+            assert orig.X.shape == new_list[i].X.shape, new_list_names[i] + " X shape mismatch"
+        #assert orig.X.dtype == new_list[i].X.dtype, new_list_names[i] + " X dtype mismatch"
+        #assert np.allclose(orig.X.A,new_list[i].X.A), "X values mismatch"
+        #assert np.allclose(orig.layers["counts"].A,new_list[i].layers["counts"].A), "Raw X values mismatch"
+
 def diff_clust(clust, clust_comb):
     """
 
@@ -204,9 +240,39 @@ def get_consensus_cluster(adata_orig, adata_method):
     arr_clusters = []
     for i in range(cl_unstacked.shape[0]):
         arr_clusters.append((np.sum(cl_unstacked[i, :]) - np.amax(cl_unstacked[i, :])) / np.sum(cl_unstacked[i, :]))
-    arr_clusters
     return np.array(arr_clusters)
 
+def get_ari(adata_orig, adata_methods):
+    """
+    Calculate the Adjusted Rand Index (ARI) for each method in adata_methods compared to the original dataset adata_orig.
+    Parameters:
+    - adata_orig: AnnData object
+        The original dataset.
+    - adata_methods: list of AnnData objects
+        List of datasets obtained from different methods.
+    Returns:
+    - ari: list of float
+        List of ARI values for each method in adata_methods compared to adata_orig.
+    """
+    
+    ari = []
+    for j in adata_methods:
+        if (
+            np.in1d(adata_orig.obs.index.values, j.obs.index.values).nonzero()[0].shape[0] == adata_orig.shape[0]
+            and adata_orig.shape[0] == j.shape[0]
+        ):
+            
+            ari.append(adjusted_rand_score(adata_orig.obs["leiden"], j.obs["leiden"]))
+        else:
+            if len(adata_orig.obs.index.values[0]) != len(j.obs.index.values[0]):
+                match = adata_orig.obs.index.isin(j.obs.index.str[:-2].values)
+                match_in_comp = np.in1d(j.obs.index.str[:-2].values, adata_orig.obs.index.values).nonzero()[0]
+            else:
+                match = adata_orig.obs.index.isin(j.obs.index.values)
+                match_in_comp = np.in1d(j.obs.index.values, adata_orig.obs.index.values).nonzero()[0]
+            match = np.where(match)[0]
+            ari.append(adjusted_rand_score(adata_orig[match, :].obs["leiden"], j[match_in_comp, :].obs["leiden"]))
+    return ari
 
 def marker_gene_diff(adata1, adata2, cl1, cl2):
     """.
@@ -247,7 +313,7 @@ def marker_gene_diff(adata1, adata2, cl1, cl2):
     return genes
 
 
-def nn_rank_change(adata, adata_list, neuro=False):
+def nn_rank_change(adata, adata_list, adata_names,wc,neuro=False):
     """.
 
     Function to get NN rank displacement
@@ -282,7 +348,18 @@ def nn_rank_change(adata, adata_list, neuro=False):
         adata_norms = cdist(adata[:, adata.var.highly_variable].X.todense(), adata[:, adata.var.highly_variable].X.todense())
 
     top_nn = get_top_nn(adata_norms, 30)
-    temp_adata_list = adata_list.copy()
+    #ls_copy = adata_list.copy()
+
+    ls_copy = adata_list.copy()
+    names_copy = adata_names.copy()
+    meths = [f"{wc}_bbknn",f"{wc}_harmony",f"{wc}_liger",f"{wc}_liger_v2"]
+
+
+    for i in meths:
+        if i in names_copy:
+            n = names_copy.index(i)
+            del(ls_copy[n])
+            del(names_copy[n])
     ####
     # if multiprocessing.cpu_count() >= 5:
     #     p = multiprocessing.Pool(5)
@@ -306,12 +383,11 @@ def nn_rank_change(adata, adata_list, neuro=False):
     ####
     ######
     # remove harmony, liger and ligerv2
-    if len(adata_list) != 1:
-        del temp_adata_list[1]
-        del temp_adata_list[1]
+    # if len(adata_list) != 1:
+    #     del temp_adata_list[1]
+    #     del temp_adata_list[1]
     mean_rank_change = []
-
-    for adata2 in temp_adata_list:
+    for i,adata2 in enumerate(ls_copy):
         result = nn_rank_parall_exec(adata2, adata_norms, adata, top_nn)
         mean_rank_change.append(result)
     ##########
@@ -321,7 +397,7 @@ def nn_rank_change(adata, adata_list, neuro=False):
     return mean_rank_change
 
 
-def nn_rank_change_embedding(adata, adata_list):
+def nn_rank_change_embedding(adata, adata_list,adata_names,wc):
     """
 
     Get NN rank change for the embeddings.
@@ -342,8 +418,20 @@ def nn_rank_change_embedding(adata, adata_list):
     mean_rank_change = []
     adata_emb_norms = cdist(adata.obsm["X_pca"], adata.obsm["X_pca"])
     top_nn = get_top_nn(adata_emb_norms, 30)
-    temp_adata_list = adata_list.copy()
-    for k in temp_adata_list:
+
+
+    ls_copy = adata_list.copy()
+    names_copy = adata_names.copy()
+
+    meths = [f"{wc}_bbknn"]
+
+
+    for i in meths:
+        n = names_copy.index(i)
+        del(names_copy[n])
+        del(ls_copy[n])
+    
+    for k in ls_copy:
         if np.in1d(adata.obs.index.values, k.obs.index.values).nonzero()[0].shape[0] == adata.shape[0] and adata.shape[0] == k.shape[0]:
             # adata_norms_2 = cdist(k[:, k.var.highly_variable].X.todense(), k[:, k.var.highly_variable].X.todense())
             if "X_harmony" in k.obsm:
@@ -445,6 +533,16 @@ def nn_rank_parall_exec(k, adata_norms, adata, top_nn):
 
 # write list to binary file
 def write_list(ls, filename):
+    """
+    Write a list into a binary file.
+
+    Args:
+        ls (list): The list to be written into the file.
+        filename (str): The name of the file to write the list into.
+
+    Returns:
+        None
+    """
     # store list in binary file so 'wb' mode
     file = []
     if exists(filename):
@@ -459,11 +557,20 @@ def write_list(ls, filename):
 
 # Read list to memory
 def read_list(filename):
+    """
+    Read a list from a file.
+
+    Args:
+        filename (str): The path to the file.
+
+    Returns:
+        list: The list read from the file.
+    """
     # for reading also binary mode is important
     with open(filename, "rb") as fp:
         n_list = pickle.load(fp)
         return n_list
-
+    
 
 # %%
 def main(inputs, wildcards, outputs):
@@ -488,66 +595,43 @@ def main(inputs, wildcards, outputs):
     """
     neuro = False
     # resamp = False
-    if "simul-neuro" in wildcards[0]:
-        cc_file_string = "data/cc_file_simul_neuro.pickle"
-        nn_rank_file_string = "data/nn_rank_file_simul_neuro.pickle"
-        nn_rank_emb_file_string = "data/nn_rank_emb_file_simul_neuro.pickle"
-        orig_leiden_clust_string = "data/leiden_simul_neuro.csv"
-    elif "neuro" in wildcards[0]:
-        cc_file_string = "data/cc_file_neuro.pickle"
-        nn_rank_file_string = "data/nn_rank_file_neuro.pickle"
-        nn_rank_emb_file_string = "data/nn_rank_emb_file_neuro.pickle"
-        orig_leiden_clust_string = "data/leiden_neuro.csv"
-        neuro = True
-        # resamp = True
-        # neuro_resamp = True
-    elif "simul-pbmc" in wildcards[0]:
-        cc_file_string = "data/cc_file_simul_pbmc.pickle"
-        nn_rank_file_string = "data/nn_rank_file_simul_pbmc.pickle"
-        nn_rank_emb_file_string = "data/nn_rank_emb_file_simul_pbmc.pickle"
-        orig_leiden_clust_string = "data/leiden_simul_pbmc.csv"
-        # neuro_resamp = True
-    elif "pbmc4k" in wildcards[0]:
-        cc_file_string = "data/cc_file_pbmc4k.pickle"
-        nn_rank_file_string = "data/nn_rank_file_pbmc4k.pickle"
-        nn_rank_emb_file_string = "data/nn_rank_emb_file_pbmc4k.pickle"
-        orig_leiden_clust_string = "data/leiden_pbmc4k.csv"
-    elif "heart" in wildcards[0]:
-        cc_file_string = "data/cc_file_heart.pickle"
-        nn_rank_file_string = "data/nn_rank_file_heart.pickle"
-        nn_rank_emb_file_string = "data/nn_rank_emb_file_heart.pickle"
-        orig_leiden_clust_string = "data/leiden_heart.csv"
-    else:
-        cc_file_string = "data/cc_file.pickle"
-        nn_rank_file_string = "data/nn_rank_file.pickle"
-        nn_rank_emb_file_string = "data/nn_rank_emb_file.pickle"
-        orig_leiden_clust_string = "data/leiden.csv"
+    data_wc = ""
+    if wildcards:
+        wc = wildcards[0]
+        ind = [i for i, x in enumerate(wc) if x == '-']
+        if len(ind)==1:
+            data_wc = wc[:ind[0]]
+        else:
+            data_wc = wc[:ind[1]]
+        if "neuro" in wc:
+            neuro = True
+    cc_file_string = f"data/cc_file_{data_wc}.pickle"
+    ari_file_string = f"data/ari_{data_wc}.pickle"
+    nn_rank_file_string = f"data/nn_rank_file_{data_wc}.pickle"
+    nn_rank_emb_file_string = f"data/nn_rank_emb_file_{data_wc}.pickle"
+    orig_leiden_clust_string = f"data/leiden_{data_wc}.csv"
 
     names = []
     files = []
     for i in inputs:
         names.append(i[5:-5])
         files.append(sc.read_h5ad(i))
-    # files = [files[0],files[5]]
-
-    # for i in range(1, len(files)):
-    #     print(files[i].obs.index.values[0])
-    #     if len(files[i].obs.index.values[0]) != len(files[i - 1].obs.index.values[0]):
-    #         print("Exiting the program...")
-    #         import sys
-
-    #         sys.exit(0)
-    # list of files = l
+    error_check_adata(files[0],files[1:],names[1:])
     cons_clust = get_consensus_clusters(files[0], files[1:])
     print("finished consensus clusters")
 
     write_list(cons_clust, cc_file_string)
 
     print("saved consensus clusters")
+    
+    ari = get_ari(files[0], files[1:])
+    print("finished ari calculations")
 
-    nn_ranks = nn_rank_change(files[0], files[2:], neuro)
+    write_list(ari, ari_file_string)
+    print("saved ari")
+    nn_ranks = nn_rank_change(files[0], files[1:],names[1:],wildcards[0], neuro)
     print("finished ranks calculations - ", wildcards[0])
-    nn_ranks_emb = nn_rank_change_embedding(files[0], files[2:])
+    nn_ranks_emb = nn_rank_change_embedding(files[0],files[1:],names[1:],wildcards[0])
     print("finished embedding ranks calculations - ", wildcards[0])
 
     write_list(nn_ranks, nn_rank_file_string)
@@ -556,7 +640,6 @@ def main(inputs, wildcards, outputs):
     if not exists(orig_leiden_clust_string):
         # pd.DataFrame(data=adata.obs["leiden"]).to_csv(outputs[5])
         files[0].obs["leiden"].to_csv(orig_leiden_clust_string)
-
     # %%
 
 

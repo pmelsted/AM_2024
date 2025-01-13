@@ -20,7 +20,8 @@ run <- function(){
   Cells = data@meta.data
   Cells["batch"]= batch
   data <- AddMetaData(data,subset(Cells, select = c("batch")))
-  out <- mnnCorrect(data[["RNA"]]@data,batch=data@meta.data["batch"]$batch)
+  data_x <-as.matrix(data[["RNA"]]@data)
+  out <- mnnCorrect(data_x,batch=data@meta.data["batch"]$batch,cos.norm.out=FALSE)
   data[["RNA"]]@scale.data = out@assays@data@listData$corrected
   
   res <- data[["RNA"]]@scale.data

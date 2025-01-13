@@ -11,6 +11,10 @@ from scipy.stats import mannwhitneyu
 from scipy.stats import wilcoxon
 
 
+
+#%%
+
+
 def ratio_nn_multiple(match_arr):
     arr = []
     for sub_arr in match_arr:
@@ -261,7 +265,7 @@ def apply_batch(adata, fix, subsample, batch_nr):
     return adata
 
 
-def run_pp(data, subsample=False, outputs=None, fix=False, batch_nr=2):
+def run_pp(data, subsample=False, outputs=None, fix=False, batch_nr=2, diffexp=False):
     """Preprocess adata for given data.
 
     Parameters.
@@ -350,7 +354,18 @@ def run_pp(data, subsample=False, outputs=None, fix=False, batch_nr=2):
         n_genes_max_filt = 4000
         mt_string = "MT-"
         pct_mt_filt = 10
-
+    elif data == "jejunum":
+        adata = sc.read_10x_h5("data/5k_human_jejunum_CNIK_3pv3_raw_feature_bc_matrix.h5")
+        sc.pp.filter_cells(adata, min_genes=min_genes)
+        sc.pp.filter_genes(adata, min_cells=min_cells)
+        if "feature_types" in adata.var:
+            adata.var.drop(columns=["feature_types"], inplace=True)
+        if "genome" in adata.var:
+            adata.var.drop(columns=["genome"], inplace=True)
+        mt_string = "MT-"
+        n_genes_max_filt = 2500
+        pct_mt_filt = 10
+        n_genes_max_filt = 5000
     elif data == "simul_neuro":
         adata = sc.read_10x_h5("data/1M_neurons_neuron20k.h5")
         min_genes = 500
@@ -434,11 +449,12 @@ def run_pp(data, subsample=False, outputs=None, fix=False, batch_nr=2):
         sc.pp.regress_out(adata, ["total_counts", "pct_counts_mt"])
         # sc.pp.highly_variable_genes(adata,n_top_genes=5000)
         # sc.pp.highly_variable_genes(adata,flavor="seurat_v3",n_top_genes=2000,layer ="counts")
-
-        sc.pp.scale(adata, max_value=10)
+        if not diffexp:
+            sc.pp.scale(adata, max_value=10)
 
     if not sparse.issparse(adata.X):
         adata.X = sparse.csr_matrix(adata.X)
+    # sc.tl.pca(adata, use_highly_variable=True)
     sc.tl.pca(adata, use_highly_variable=True)
     sc.pp.neighbors(adata, random_state=42)
     sc.tl.leiden(adata, random_state=42)
@@ -504,6 +520,14 @@ def run_pp_single_batch(data):
         n_genes_max_filt = 3500
         mt_string = "MT-"
         pct_mt_filt = 10
+    elif data == "jejunum":
+        adata = sc.read_10x_h5("data/5k_human_jejunum_CNIK_3pv3_raw_feature_bc_matrix.h5")
+        sc.pp.filter_cells(adata, min_genes=min_genes)
+        sc.pp.filter_genes(adata, min_cells=min_cells)
+        mt_string = "MT-"
+        n_genes_max_filt = 2500
+        pct_mt_filt = 20
+        n_genes_max_filt = 5000
     elif data == "resample_heart":
         adata = sc.read_h5ad("data/adata_resampled_heart.h5ad")
         sc.pp.filter_cells(adata, min_genes=min_genes)
@@ -606,8 +630,11 @@ def apply_method(meth, adata, inputs=None, outputs=None, diffexp=False):
     adata_comb = adata.copy()
 
     if meth == "none":
+        #output X 
         pd.DataFrame(data=adata.X.todense(), index=adata.obs_names, columns=adata.var_names).to_csv(outputs[2])
+        #output PCA
         pd.DataFrame(data=adata.obsm["X_pca"], index=adata.obs_names).to_csv(outputs[5])
+        pd.DataFrame(data=adata.layers["counts"].todense(), index=adata.obs_names, columns=adata.var_names).to_csv(outputs[7])
         np.savetxt(outputs[6], np.array(adata_comb.obs["batch"]), delimiter=",", fmt="%s")
         np.savetxt(
             outputs[4],
@@ -630,10 +657,17 @@ def apply_method(meth, adata, inputs=None, outputs=None, diffexp=False):
         t = sc.pp.combat(adata_comb, inplace=False)
         # t[t < 0.00001] = 0
         adata_comb.X = sparse.csr_matrix(t)
+    if meth == "combatseq":
+        #combatseq wants raw counts
+        # adata_comb_temp = read_h5ad("r_to_adata.h5ad")
+        adata_comb.X = sparse.csr_matrix(np.array(pd.read_csv(inputs[1], sep=" ", header=None)).astype(float))
+        sc.pp.normalize_total(adata_comb, target_sum=1e4)
+        sc.pp.log1p(adata_comb)
+        # adata_comb.X = sparse.csr_matrix(adata_comb.X)
     if meth == "mnn":
         adata_comb.X = sparse.csr_matrix(np.array(pd.read_csv(inputs[1], sep=" ", header=None)))
         # sc.external.pp.mnn_correct(adata_comb, batch_key="batch")[0][0].X
-        adata_comb.X = sparse.csr_matrix(adata_comb.X)
+        #adata_comb.X = sparse.csr_matrix(adata_comb.X)
         # sc.pp.neighbors(adata_comb)
         # sc.tl.leiden(adata_comb)
     if meth == "scvi":
