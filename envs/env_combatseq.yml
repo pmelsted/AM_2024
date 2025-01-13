@@ -1,0 +1,10 @@
+name: combatseq
+channels:
+  - conda-forge
+  - bioconda
+
+  - defaults
+dependencies:
+  - r-base=4.1
+  #- bioconda::bbknn=1.4.1
+  - bioconda::bioconductor-sva
