@@ -123,3 +123,26 @@ harmony_sigma <- function(){
     
 }
 
+get_top_k_neighbors <- function(R, k = 100) {
+    
+    nearest_neighbors <- t(apply(R, 1, function(row) {
+        sorted_indices <- order(row)  # Sort distances (ascending)
+        return(sorted_indices[2:(k + 1)])  # Exclude self (first index)
+    }))
+    
+    return(nearest_neighbors)
+}
+nn_rank_change <- function(R1, R2) {
+    
+    result <- matrix(NA, nrow = nrow(R1), ncol = ncol(R1))
+    
+    for (i in 1:nrow(R1)) {
+        
+        for (j in 1:ncol(R1)) {
+            value <- as.numeric(R1[i, j])
+            result[i, j] <- abs(which(R2[i, ] == value) - j)
+        }
+    }
+    
+    return(result)
+}
